@@ -1,8 +1,8 @@
-# Real-time Collaborative TODO App
+# Full-Stack Real-Time TODO App
 
-A full-stack TODO application built with React, Node.js, Express, TypeScript, MongoDB, and Socket.IO.
+A full-stack collaborative TODO application built with React, Node.js, Express, TypeScript, MongoDB, Socket.IO, Redis, Docker, and Nginx.
 
-The application allows multiple users to manage tasks together and see updates instantly without refreshing the page.
+The application allows users to manage tasks collaboratively, synchronize changes in real time, track online presence, and upload images for their tasks.
 
 ## Technologies Used
 
@@ -11,6 +11,7 @@ The application allows multiple users to manage tasks together and see updates i
 - Vite
 - JavaScript
 - Socket.IO Client
+- CSS
 
 **Backend**
 - Node.js
@@ -19,20 +20,33 @@ The application allows multiple users to manage tasks together and see updates i
 - MongoDB
 - Mongoose
 - Socket.IO
+- Redis
+- Multer
+- `file-type`
+
+**Infrastructure**
+- Docker
+- Docker Compose
+- Nginx
 
 ## Features
 
-- Create new tasks
-- Edit existing tasks
+- Create, edit, and delete tasks
 - Mark tasks as completed or active
-- Delete tasks
 - Filter tasks by status
 - Clear completed tasks
 - Real-time synchronization across browser tabs
 - Online user presence tracking
 - Shared workspace using Socket.IO rooms
+- Redis caching for TODO queries
+- Upload JPG, PNG, and WebP images
+- Validate image file types using file content
+- Enforce upload size limits
+- Display uploaded images alongside tasks
+- Persist MongoDB data and uploaded files using Docker volumes
+- Route frontend, API, uploaded images, and Socket.IO traffic through Nginx
 
-## Real-time Events
+## Real-Time Events
 
 The application uses Socket.IO to synchronize changes between connected clients.
 
@@ -41,65 +55,119 @@ The application uses Socket.IO to synchronize changes between connected clients.
 - `todo:created` — Notify clients when a task is created
 - `todo:updated` — Notify clients when a task is updated
 - `todo:deleted` — Notify clients when a task is deleted
-- `presence:update` — Update the online user count
+- `presence:update` — Update online user presence
 
-## Getting Started
+## Getting Started with Docker
+
+### Prerequisites
+
+- Docker Desktop
+- Git
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/AlinaMamaeva/todo-front-back-habshida.git
-cd todo-front-back-habshida
+git clone https://github.com/AlinaMamaeva/fullstack-todo-docker.git
+cd fullstack-todo-docker
 ```
 
-### 2. Install Backend dependencies
+### 2. Configure environment variables
+
+Configure the environment variables required by the backend. For local development, use the appropriate `.env` file and your MongoDB connection string.
+
+The Docker Compose configuration uses the MongoDB service available inside the Compose network.
+
+Do not commit real passwords, API keys, or other secrets.
+
+### 3. Build and start the application
+
+From the project root, run:
 
 ```bash
-cd backend
-npm install
+docker compose up -d --build
 ```
 
-Create a `.env` file and configure your MongoDB connection using the environment variables required by the backend.
-
-Start the development server:
+Check the running containers:
 
 ```bash
-npm run dev
+docker compose ps
 ```
 
-The Backend runs on port 3000.
+### 4. Open the application
 
-### 3. Install Frontend dependencies
+- **Frontend:** http://localhost:8082
+- **Backend health check:** http://localhost:8082/health
+- **TODO API:** http://localhost:8082/api/todos
 
-Open another terminal:
+Nginx routes incoming requests to the frontend and backend services.
+
+### 5. Stop the application
 
 ```bash
-cd frontend
-npm install
+docker compose down
 ```
 
-Create a `.env` file:
+MongoDB and uploaded-file data are stored in Docker volumes. Running `docker compose down` without `-v` preserves these volumes.
 
-```env
-VITE_API_URL=http://localhost:3000
+## Image Uploads
+
+Images can be uploaded through the application or the upload API.
+
+The upload endpoint is:
+
+```http
+POST /api/uploads
 ```
 
-Start the Frontend:
+Send the image as multipart form data using the field name `file`.
 
-```bash
-npm run dev
-```
+Supported formats:
+- JPEG
+- PNG
+- WebP
 
-Open the local URL displayed by Vite, usually `http://localhost:5173`.
+The backend validates the file content and enforces an upload size limit. Uploaded images are stored in a persistent Docker volume and referenced by their URL in TODO documents.
 
-## Testing Real-time Features
+## Testing Real-Time Features
 
 1. Open the application in two browser tabs.
 2. Create a task in the first tab.
 3. Verify that the task appears automatically in the second tab.
 4. Update or delete a task and verify that both tabs synchronize.
-5. Close one tab and verify that the online user count decreases.
+5. Open another tab and verify that presence updates correctly.
+6. Upload an image and verify that it appears with the task.
+7. Restart the Docker containers and verify that tasks and uploaded images remain available.
+
+## Useful Docker Commands
+
+Rebuild the backend:
+
+```bash
+docker compose up -d --build backend
+```
+
+Rebuild the frontend:
+
+```bash
+docker compose up -d --build frontend
+```
+
+View backend logs:
+
+```bash
+docker compose logs -f backend
+```
+
+View all container statuses:
+
+```bash
+docker compose ps
+```
+
+## Project Repository
+
+GitHub: https://github.com/AlinaMamaeva/fullstack-todo-docker
 
 ## Project Status
 
-The required real-time TODO features have been implemented and tested locally.
+The application has been containerized with Docker Compose and tested locally, including real-time task synchronization, image uploads, upload validation, and persistence across container restarts.
