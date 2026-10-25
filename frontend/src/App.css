@@ -389,7 +389,20 @@ html .clear-completed:active {
 .info a:hover {
   text-decoration: underline;
 }
+.todo-list li label {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
 
+.task-image {
+  display: block;
+  width: 160px;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  object-fit: cover;
+}
 /*
 	Hack to remove background from Mobile Safari.
 	Can't use it globally since it destroys checkboxes in Firefox

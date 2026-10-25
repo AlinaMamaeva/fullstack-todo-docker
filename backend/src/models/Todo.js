@@ -22,6 +22,19 @@ const todoSchema = new mongoose.Schema(
     dueDate: {
       type: Date,
     },
+    imageUrl: {
+      type: String,
+      default: "",
+      validate: {
+        validator: function (value) {
+          return (
+            value === "" ||
+            /^\/uploads\/[a-f0-9-]+\.(jpg|jpeg|png|webp)$/.test(value)
+          );
+        },
+        message: "Invalid image URL",
+      },
+    },
   },
   {
     timestamps: true,

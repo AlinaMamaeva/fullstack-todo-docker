@@ -27,6 +27,10 @@ function Task(props) {
         <label>
           <span className="title">{task.title}</span>
 
+          {task.imageUrl && (
+            <img src={task.imageUrl} alt={task.title} className="task-image" />
+          )}
+
           <span className="created">
             created{" "}
             {task.createdAt
@@ -76,6 +80,7 @@ Task.propTypes = {
     title: PropTypes.string.isRequired,
     completed: PropTypes.bool.isRequired,
     createdAt: PropTypes.string.isRequired,
+    imageUrl: PropTypes.string,
   }).isRequired,
 
   toggleStatus: PropTypes.func.isRequired,

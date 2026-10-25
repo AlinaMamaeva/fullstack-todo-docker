@@ -9,7 +9,7 @@ import TasksFilter from "./components/TasksFilter";
 import { io } from "socket.io-client";
 
 function App() {
-  const API_URL = import.meta.env.VITE_API_URL;
+  const API_URL = import.meta.env.VITE_API_URL || window.location.origin;
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -21,6 +21,7 @@ function App() {
       console.log("Socket connected:", socket.id);
 
       socket.emit("workspace:join", {
+        workspace: "default",
         username: "Guest",
       });
     });
@@ -133,29 +134,31 @@ function App() {
     setEditingTaskId((prev) => (prev === id ? null : id));
   };
 
-  const addTask = (text) => {
-    fetch(`${API_URL}/api/todos`, {
+  const addTask = async (text, imageUrl = "") => {
+    const response = await fetch(`${API_URL}/api/todos`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         title: text,
+        imageUrl: imageUrl,
       }),
-    })
-      .then((response) => response.json())
-      .then((newTask) => {
-        setTasks((prev) => {
-          const exists = prev.some((task) => task._id === newTask._id);
+    });
 
-          if (exists) return prev;
+    if (!response.ok) {
+      throw new Error("Failed to create todo");
+    }
 
-          return [newTask, ...prev];
-        });
-      })
-      .catch((error) => {
-        console.error("Failed to create todo:", error);
-      });
+    const newTask = await response.json();
+
+    setTasks((prev) => {
+      const exists = prev.some((task) => task._id === newTask._id);
+
+      if (exists) return prev;
+
+      return [newTask, ...prev];
+    });
   };
 
   const [filter, setFilter] = useState("All");

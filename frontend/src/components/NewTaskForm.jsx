@@ -1,19 +1,57 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import PropTypes from "prop-types";
 
 function NewTaskForm({ addTask }) {
   const [text, setText] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const fileInputRef = useRef(null);
 
   const handleChange = (event) => {
     setText(event.target.value);
   };
 
-  const handleKeyDown = (event) => {
-    if (event.key === "Enter") {
-      console.log("new task added: ", text);
-      addTask(text);
+  const uploadImage = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
 
-      setText("");
+    const response = await fetch("/api/uploads", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to upload image");
+    }
+
+    return data.url;
+  };
+
+  const handleKeyDown = async (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+
+      if (!text.trim()) return;
+
+      try {
+        let imageUrl = "";
+
+        if (selectedFile) {
+          imageUrl = await uploadImage(selectedFile);
+        }
+
+        await addTask(text, imageUrl);
+
+        setText("");
+        setSelectedFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      } catch (error) {
+        console.error("Failed to create task:", error);
+        alert(error.message);
+      }
     }
   };
 
@@ -27,6 +65,14 @@ function NewTaskForm({ addTask }) {
         onKeyDown={handleKeyDown}
         placeholder="What needs to be done?"
         autoFocus
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        onChange={(event) => {
+          setSelectedFile(event.target.files?.[0] || null);
+        }}
       />
     </header>
   );

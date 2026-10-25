@@ -25,6 +25,8 @@ COPY --from=build /app/dist ./dist
 
 ENV NODE_ENV=production
 
+RUN mkdir -p /app/uploads && chown -R node:node /app/uploads
+
 USER node
 
 EXPOSE 3000
