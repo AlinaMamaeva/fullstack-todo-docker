@@ -24,3 +24,11 @@ uploads/
 
 # Logs
 *.log
+
+nginx/ssl/*.key
+
+# Database backups
+backups/
+
+# Local SSL certificates and private keys
+nginx/ssl/

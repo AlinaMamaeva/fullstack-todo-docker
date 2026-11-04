@@ -1,4 +1,4 @@
-const Todo = require("../models/Todo");
+import Todo from "../models/Todo.js";
 
 // create todo
 async function createTodo(data) {
@@ -13,7 +13,6 @@ async function getTodo(id) {
 
   return todo;
 }
-
 
 // get all todos
 async function getTodos(completed, limit, page, sort) {
@@ -48,10 +47,7 @@ async function getTodos(completed, limit, page, sort) {
 
   // page validation
   if (page !== undefined) {
-    if (
-      Number.isNaN(Number(page)) ||
-      Number(page) <= 0
-    ) {
+    if (Number.isNaN(Number(page)) || Number(page) <= 0) {
       const error = new Error("Invalid page");
       error.statusCode = 400;
       throw error;
@@ -64,20 +60,14 @@ async function getTodos(completed, limit, page, sort) {
 
   // sort
   if (sort !== undefined) {
-    const allowedSortFields = [
-      "createdAt",
-      "dueDate",
-      "completed",
-    ];
+    const allowedSortFields = ["createdAt", "dueDate", "completed"];
 
     const sortFields = sort.split(",");
 
     const sortObject = {};
 
     for (const field of sortFields) {
-      const sortField = field.startsWith("-")
-        ? field.slice(1)
-        : field;
+      const sortField = field.startsWith("-") ? field.slice(1) : field;
 
       if (!allowedSortFields.includes(sortField)) {
         const error = new Error("Invalid sort field");
@@ -85,9 +75,7 @@ async function getTodos(completed, limit, page, sort) {
         throw error;
       }
 
-      sortObject[sortField] = field.startsWith("-")
-        ? -1
-        : 1;
+      sortObject[sortField] = field.startsWith("-") ? -1 : 1;
     }
 
     query.sort(sortObject);
@@ -100,14 +88,10 @@ async function getTodos(completed, limit, page, sort) {
 
 // update
 async function updateTodo(id, data) {
-  const todo = await Todo.findByIdAndUpdate(
-    id,
-    data,
-    {
-      new: true,
-      runValidators: true,
-    }
-  );
+  const todo = await Todo.findByIdAndUpdate(id, data, {
+    new: true,
+    runValidators: true,
+  });
 
   return todo;
 }
@@ -134,7 +118,7 @@ async function toggleTodo(id) {
   return todo;
 }
 
-module.exports = {
+export default {
   createTodo,
   getTodo,
   getTodos,

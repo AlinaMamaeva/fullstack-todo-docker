@@ -1,11 +1,28 @@
+
 import multer from "multer";
 import path from "node:path";
 import crypto from "node:crypto";
 import fs from "node:fs";
 
-const uploadDir = path.join(process.cwd(), "uploads");
+const uploadDir = path.resolve(
+  process.env.UPLOAD_DIR || "uploads"
+);
 
 fs.mkdirSync(uploadDir, { recursive: true });
+
+const maxFileSize = Number(
+  process.env.MAX_FILE_SIZE || 5242880
+);
+
+if (!Number.isSafeInteger(maxFileSize) || maxFileSize <= 0) {
+  throw new Error("MAX_FILE_SIZE must be a positive integer");
+}
+
+const allowedTypes = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
@@ -13,16 +30,21 @@ const storage = multer.diskStorage({
   },
 
   filename: (_req, file, cb) => {
-    const extension = path.extname(file.originalname).toLowerCase();
+    const extension = path.extname(
+      file.originalname
+    ).toLowerCase();
+
     const uniqueName = `${crypto.randomUUID()}${extension}`;
 
     cb(null, uniqueName);
   },
 });
 
-const fileFilter: multer.Options["fileFilter"] = (_req, file, cb) => {
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-
+const fileFilter: multer.Options["fileFilter"] = (
+  _req,
+  file,
+  cb
+) => {
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
@@ -34,6 +56,6 @@ export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024,
+    fileSize: maxFileSize,
   },
 });

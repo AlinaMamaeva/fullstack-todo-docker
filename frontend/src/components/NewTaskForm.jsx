@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import PropTypes from "prop-types";
+import axios from "axios";
 
 function NewTaskForm({ addTask }) {
   const [text, setText] = useState("");
@@ -10,23 +11,14 @@ function NewTaskForm({ addTask }) {
     setText(event.target.value);
   };
 
-  const uploadImage = async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
+ const uploadImage = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
 
-    const response = await fetch("/api/uploads", {
-      method: "POST",
-      body: formData,
-    });
+  const response = await axios.post("/api/uploads", formData);
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to upload image");
-    }
-
-    return data.url;
-  };
+  return response.data.url;
+};
 
   const handleKeyDown = async (event) => {
     if (event.key === "Enter") {

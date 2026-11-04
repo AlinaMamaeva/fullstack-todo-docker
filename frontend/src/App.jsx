@@ -7,9 +7,15 @@ import "./App.css";
 import TasksFilter from "./components/TasksFilter";
 
 import { io } from "socket.io-client";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL || window.location.origin;
+
+const api = axios.create({
+  baseURL: API_URL,
+});
 
 function App() {
-  const API_URL = import.meta.env.VITE_API_URL || window.location.origin;
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -63,10 +69,10 @@ function App() {
 
   //api from backend
   useEffect(() => {
-    fetch(`${API_URL}/api/todos`)
-      .then((response) => response.json())
-      .then((data) => {
-        setTasks(data);
+    api
+      .get("/api/todos")
+      .then((response) => {
+        setTasks(response.data);
       })
       .catch((error) => {
         console.error("Failed to fetch todos:", error);
@@ -74,11 +80,11 @@ function App() {
   }, []);
 
   const toggleStatus = (id) => {
-    fetch(`${API_URL}/api/todos/${id}/toggle`, {
-      method: "PATCH",
-    })
-      .then((response) => response.json())
-      .then((updatedTask) => {
+    api
+      .patch(`/api/todos/${id}/toggle`)
+      .then((response) => {
+        const updatedTask = response.data;
+
         setTasks((prev) =>
           prev.map((task) =>
             task._id === updatedTask._id ? updatedTask : task,
@@ -89,12 +95,9 @@ function App() {
         console.error("Failed to toggle todo:", error);
       });
   };
-
   const deleteTask = (id) => {
-    fetch(`${API_URL}/api/todos/${id}`, {
-      method: "DELETE",
-    })
-      .then((response) => response.json())
+    api
+      .delete(`/api/todos/${id}`)
       .then(() => {
         setTasks((prevTasks) => prevTasks.filter((task) => task._id !== id));
 
@@ -106,17 +109,13 @@ function App() {
   };
 
   const updateTask = (id, newTitle) => {
-    fetch(`${API_URL}/api/todos/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    api
+      .patch(`/api/todos/${id}`, {
         title: newTitle,
-      }),
-    })
-      .then((response) => response.json())
-      .then((updatedTask) => {
+      })
+      .then((response) => {
+        const updatedTask = response.data;
+
         setTasks((prev) =>
           prev.map((task) =>
             task._id === updatedTask._id ? updatedTask : task,
@@ -134,32 +133,22 @@ function App() {
     setEditingTaskId((prev) => (prev === id ? null : id));
   };
 
-  const addTask = async (text, imageUrl = "") => {
-    const response = await fetch(`${API_URL}/api/todos`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        title: text,
-        imageUrl: imageUrl,
-      }),
-    });
+ const addTask = async (text, imageUrl = "") => {
+  const response = await api.post("/api/todos", {
+    title: text,
+    imageUrl: imageUrl,
+  });
 
-    if (!response.ok) {
-      throw new Error("Failed to create todo");
-    }
+  const newTask = response.data;
 
-    const newTask = await response.json();
+  setTasks((prev) => {
+    const exists = prev.some((task) => task._id === newTask._id);
 
-    setTasks((prev) => {
-      const exists = prev.some((task) => task._id === newTask._id);
+    if (exists) return prev;
 
-      if (exists) return prev;
-
-      return [newTask, ...prev];
-    });
-  };
+    return [newTask, ...prev];
+  });
+};
 
   const [filter, setFilter] = useState("All");
 
@@ -171,22 +160,20 @@ function App() {
   const activeTasks = tasks.filter((task) => !task.completed).length;
 
   const clearCompleted = () => {
-    const completedTasks = tasks.filter((task) => task.completed);
+  const completedTasks = tasks.filter((task) => task.completed);
 
-    Promise.all(
-      completedTasks.map((task) =>
-        fetch(`${API_URL}/api/todos/${task._id}`, {
-          method: "DELETE",
-        }),
-      ),
-    )
-      .then(() => {
-        setTasks((prev) => prev.filter((task) => !task.completed));
-      })
-      .catch((error) => {
-        console.error("Failed to clear completed todos:", error);
-      });
-  };
+  Promise.all(
+    completedTasks.map((task) =>
+      api.delete(`/api/todos/${task._id}`),
+    ),
+  )
+    .then(() => {
+      setTasks((prev) => prev.filter((task) => !task.completed));
+    })
+    .catch((error) => {
+      console.error("Failed to clear completed todos:", error);
+    });
+};
 
   return (
     <section className="todoapp">
