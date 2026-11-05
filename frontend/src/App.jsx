@@ -9,10 +9,11 @@ import TasksFilter from "./components/TasksFilter";
 import { io } from "socket.io-client";
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || window.location.origin;
+const API_URL = __API_URL__;
+const API_ORIGIN = new URL(API_URL).origin;
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: API_ORIGIN,
 });
 
 function App() {
@@ -21,7 +22,7 @@ function App() {
   const [onlineUsers, setOnlineUsers] = useState([]);
 
   useEffect(() => {
-    const socket = io(API_URL);
+    const socket = io(API_ORIGIN);
 
     socket.on("connect", () => {
       console.log("Socket connected:", socket.id);
@@ -65,14 +66,16 @@ function App() {
     return () => {
       socket.disconnect();
     };
-  }, [API_URL]);
+  }, [API_ORIGIN]);
 
   //api from backend
   useEffect(() => {
     api
       .get("/api/todos")
       .then((response) => {
-        setTasks(response.data);
+        const data = response.data;
+
+        setTasks(Array.isArray(data) ? data : data.todos);
       })
       .catch((error) => {
         console.error("Failed to fetch todos:", error);
@@ -133,22 +136,27 @@ function App() {
     setEditingTaskId((prev) => (prev === id ? null : id));
   };
 
- const addTask = async (text, imageUrl = "") => {
-  const response = await api.post("/api/todos", {
-    title: text,
-    imageUrl: imageUrl,
-  });
+  const addTask = async (text, file = null) => {
+    const formData = new FormData();
 
-  const newTask = response.data;
+    formData.append("title", text);
 
-  setTasks((prev) => {
-    const exists = prev.some((task) => task._id === newTask._id);
+    if (file) {
+      formData.append("attachments", file);
+    }
 
-    if (exists) return prev;
+    const response = await api.post("/api/todos", formData);
 
-    return [newTask, ...prev];
-  });
-};
+    const newTask = response.data;
+
+    setTasks((prev) => {
+      const exists = prev.some((task) => task._id === newTask._id);
+
+      if (exists) return prev;
+
+      return [newTask, ...prev];
+    });
+  };
 
   const [filter, setFilter] = useState("All");
 
@@ -160,20 +168,18 @@ function App() {
   const activeTasks = tasks.filter((task) => !task.completed).length;
 
   const clearCompleted = () => {
-  const completedTasks = tasks.filter((task) => task.completed);
+    const completedTasks = tasks.filter((task) => task.completed);
 
-  Promise.all(
-    completedTasks.map((task) =>
-      api.delete(`/api/todos/${task._id}`),
-    ),
-  )
-    .then(() => {
-      setTasks((prev) => prev.filter((task) => !task.completed));
-    })
-    .catch((error) => {
-      console.error("Failed to clear completed todos:", error);
-    });
-};
+    Promise.all(
+      completedTasks.map((task) => api.delete(`/api/todos/${task._id}`)),
+    )
+      .then(() => {
+        setTasks((prev) => prev.filter((task) => !task.completed));
+      })
+      .catch((error) => {
+        console.error("Failed to clear completed todos:", error);
+      });
+  };
 
   return (
     <section className="todoapp">

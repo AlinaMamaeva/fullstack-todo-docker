@@ -32,3 +32,10 @@ backups/
 
 # Local SSL certificates and private keys
 nginx/ssl/
+
+/secrets/
+/.env.production
+/nginx/ssl/*.key
+/nginx/ssl/*privkey*.pem
+
+compose.backup.yaml

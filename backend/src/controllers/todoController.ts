@@ -55,7 +55,20 @@ export const createTodo = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const todo = await createTodoService(req.body);
+    const files = (req.files || []) as Express.Multer.File[];
+
+    const attachments = files.map((file) => ({
+      filename: file.filename,
+      originalName: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      uploadDate: new Date(),
+    }));
+
+    const todo = await createTodoService({
+      ...req.body,
+      attachments,
+    });
     await clearTodosCache();
 
     getIO(req).to("workspace:default").emit("todo:created", todo);
@@ -106,15 +119,17 @@ export const getTodos = async (
 
     // 2. Get todos from MongoDB
     const todos = await getTodosService(
-      req.query.completed,
-      req.query.limit,
-      req.query.page,
-      req.query.sort,
+      req.query.completed as string | undefined,
+      req.query.limit === undefined ? undefined : Number(req.query.limit),
+      req.query.page === undefined ? undefined : Number(req.query.page),
+      req.query.sort as string | undefined,
+      req.query.status as string | undefined,
+      req.query.priority as string | undefined,
     );
 
     // 3. Save result to Redis for 60 seconds
     await redisClient.set(cacheKey, JSON.stringify(todos), {
-      EX: 60,
+      EX: 300,
     });
 
     console.log("Todos from MongoDB");

@@ -15,75 +15,95 @@ async function getTodo(id) {
 }
 
 // get all todos
-async function getTodos(completed, limit, page, sort) {
+
+async function getTodos(
+  completed,
+  limit = 10,
+  page = 1,
+  sort,
+  status,
+  priority,
+) {
   const filter = {};
 
-  let skip = 0;
-
-  // default limit
-  if (limit === undefined) {
-    limit = 10;
-  }
-
-  // completed filter
-  if (completed !== undefined) {
-    filter.completed = completed === "true";
-  }
-
-  const query = Todo.find(filter);
-
-  // limit validation
-  if (
-    Number.isNaN(Number(limit)) ||
-    Number(limit) <= 0 ||
-    Number(limit) > 100
-  ) {
-    const error = new Error("Invalid limit");
-    error.statusCode = 400;
-    throw error;
-  }
-
-  query.limit(Number(limit));
-
-  // page validation
-  if (page !== undefined) {
-    if (Number.isNaN(Number(page)) || Number(page) <= 0) {
-      const error = new Error("Invalid page");
+  if (status !== undefined) {
+    if (!["completed", "pending", "all"].includes(status)) {
+      const error = new Error("Invalid status");
       error.statusCode = 400;
       throw error;
     }
 
-    skip = (Number(page) - 1) * Number(limit);
-
-    query.skip(skip);
+    if (status === "completed") filter.completed = true;
+    if (status === "pending") filter.completed = false;
+  } else if (completed !== undefined) {
+    if (!["true", "false"].includes(completed)) {
+      const error = new Error("Invalid completed filter");
+      error.statusCode = 400;
+      throw error;
+    }
+    filter.completed = completed === "true";
   }
 
-  // sort
+  if (priority !== undefined) {
+    if (!["low", "medium", "high"].includes(priority)) {
+      const error = new Error("Invalid priority");
+      error.statusCode = 400;
+      throw error;
+    }
+    filter.priority = priority;
+  }
+
+  const pageNumber = Number(page);
+  const limitNumber = Number(limit);
+
+  if (
+    !Number.isInteger(pageNumber) ||
+    pageNumber < 1 ||
+    !Number.isInteger(limitNumber) ||
+    limitNumber < 1 ||
+    limitNumber > 100
+  ) {
+    const error = new Error("Invalid pagination");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const query = Todo.find(filter)
+    .skip((pageNumber - 1) * limitNumber)
+    .limit(limitNumber);
+
   if (sort !== undefined) {
-    const allowedSortFields = ["createdAt", "dueDate", "completed"];
-
-    const sortFields = sort.split(",");
-
+    const allowed = ["createdAt", "dueDate", "completed", "priority"];
     const sortObject = {};
 
-    for (const field of sortFields) {
-      const sortField = field.startsWith("-") ? field.slice(1) : field;
+    for (const field of sort.split(",")) {
+      const name = field.startsWith("-") ? field.slice(1) : field;
 
-      if (!allowedSortFields.includes(sortField)) {
+      if (!allowed.includes(name)) {
         const error = new Error("Invalid sort field");
         error.statusCode = 400;
         throw error;
       }
 
-      sortObject[sortField] = field.startsWith("-") ? -1 : 1;
+      sortObject[name] = field.startsWith("-") ? -1 : 1;
     }
 
     query.sort(sortObject);
+  } else {
+    query.sort({ createdAt: -1 });
   }
 
-  const todos = await query;
+  const [todos, total] = await Promise.all([
+    query.exec(),
+    Todo.countDocuments(filter),
+  ]);
 
-  return todos;
+  return {
+    todos,
+    total,
+    page: pageNumber,
+    limit: limitNumber,
+  };
 }
 
 // update

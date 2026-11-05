@@ -7,6 +7,7 @@ The application allows users to manage tasks collaboratively, synchronize change
 ## Technologies Used
 
 **Frontend**
+
 - React
 - Vite
 - JavaScript
@@ -14,6 +15,7 @@ The application allows users to manage tasks collaboratively, synchronize change
 - CSS
 
 **Backend**
+
 - Node.js
 - Express.js
 - TypeScript
@@ -25,6 +27,7 @@ The application allows users to manage tasks collaboratively, synchronize change
 - `file-type`
 
 **Infrastructure**
+
 - Docker
 - Docker Compose
 - Nginx
@@ -95,9 +98,12 @@ docker compose ps
 
 ### 4. Open the application
 
-- **Frontend:** http://localhost:8082
-- **Backend health check:** http://localhost:8082/health
-- **TODO API:** http://localhost:8082/api/todos
+- **Frontend:** http://localhost
+- **Backend health check:** http://localhost/health
+- **TODO API:** http://localhost/api/todos
+- **Analytics API:** http://localhost/api/analytics
+- **Prometheus:** http://localhost:9090
+- **Grafana:** http://localhost:3001
 
 Nginx routes incoming requests to the frontend and backend services.
 
@@ -111,23 +117,31 @@ MongoDB and uploaded-file data are stored in Docker volumes. Running `docker com
 
 ## Image Uploads
 
-Images can be uploaded through the application or the upload API.
+Images can be uploaded when creating a TODO.
 
-The upload endpoint is:
+**Endpoint:** `POST /api/todos`
 
-```http
-POST /api/uploads
-```
+Send data as `multipart/form-data`:
 
-Send the image as multipart form data using the field name `file`.
+- `title` — task title
+- `attachments` — image file (optional)
 
 Supported formats:
 - JPEG
 - PNG
 - WebP
 
-The backend validates the file content and enforces an upload size limit. Uploaded images are stored in a persistent Docker volume and referenced by their URL in TODO documents.
+Maximum file size: 5 MB.
 
+Uploaded images are stored in `backend/uploads` and served through `/uploads/<filename>`.
+
+Example:
+
+```bash
+curl -X POST http://localhost/api/todos \
+  -F "title=Test task" \
+  -F "attachments=@image.jpg"
+```
 ## Testing Real-Time Features
 
 1. Open the application in two browser tabs.
@@ -171,3 +185,70 @@ GitHub: https://github.com/AlinaMamaeva/fullstack-todo-docker
 ## Project Status
 
 The application has been containerized with Docker Compose and tested locally, including real-time task synchronization, image uploads, upload validation, and persistence across container restarts.
+
+## Health Checks
+
+Run the health-check script:
+
+```bash
+./scripts/health-check.sh
+```
+
+The script checks:
+- Docker container status
+- Frontend availability
+- Backend health and database connections
+- Nginx status
+
+## Production Configuration
+
+Production settings are defined in `docker-compose.prod.yml`.
+
+They include:
+- HTTPS through Nginx
+- MongoDB authentication using Docker secrets
+- CPU and memory limits
+- Docker log rotation
+- Automatic container restart
+
+### Environment Variables
+
+See `.env.example` for the available environment variables.
+
+Production environment values can be configured in `.env.production`.
+
+Never commit passwords, private keys, or production secrets to Git.
+
+### MongoDB Secret
+
+MongoDB credentials are stored in:
+
+`secrets/mongo_password.txt`
+
+Generate a password with:
+
+```bash
+mkdir -p secrets
+openssl rand -hex 32 > secrets/mongo_password.txt
+chmod 600 secrets/mongo_password.txt
+```
+
+### Production Deployment
+
+Review and configure production environment variables, MongoDB credentials, and SSL certificates before deployment.
+
+Validate the configuration:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml config --quiet
+```
+
+For a new production deployment with properly initialized MongoDB credentials, start the services with:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+Do not apply this configuration directly to an existing development MongoDB volume without planning the database authentication migration.
+
+The included localhost SSL certificates are intended for local testing only. A real deployment requires valid certificates for its domain.

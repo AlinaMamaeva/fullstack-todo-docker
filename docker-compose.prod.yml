@@ -1,9 +1,35 @@
 services:
+  mongo:
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo_password
+    secrets:
+      - mongo_password
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: "1.0"
+
+  redis:
+    mem_limit: 256m
+    cpus: "0.50"
+    restart: unless-stopped
+
   backend:
     environment:
       NODE_ENV: production
       CORS_ORIGIN: https://localhost
+      MONGO_USERNAME: admin
+      MONGO_PASSWORD_FILE: /run/secrets/mongo_password
+    secrets:
+      - mongo_password
     restart: unless-stopped
+    mem_limit: 512m
+    cpus: "0.50"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     build:
@@ -22,3 +48,7 @@ services:
       - ./nginx/nginx-ssl.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
     restart: unless-stopped
+
+secrets:
+  mongo_password:
+    file: ./secrets/mongo_password.txt

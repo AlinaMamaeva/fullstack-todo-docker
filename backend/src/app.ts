@@ -128,6 +128,13 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/api", todoRoutes);
+
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Route not found",
+    path: req.originalUrl,
+  });
+});
 app.use(errorHandler);
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -137,7 +144,7 @@ async function startServer() {
     await connectDB();
     await connectRedis();
 
-    server.listen(PORT, () => {
+    server.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on port ${PORT}`);
     });
   } catch (error) {

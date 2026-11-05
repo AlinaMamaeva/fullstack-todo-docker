@@ -7,6 +7,9 @@ function Task(props) {
     props;
 
   const [value, setValue] = useState(task.title);
+  const imageUrl = task.attachments?.[0]?.filename
+    ? `/uploads/${encodeURIComponent(task.attachments[0].filename)}`
+    : task.imageUrl;
 
   useEffect(() => {
     setValue(task.title);
@@ -27,8 +30,8 @@ function Task(props) {
         <label>
           <span className="title">{task.title}</span>
 
-          {task.imageUrl && (
-            <img src={task.imageUrl} alt={task.title} className="task-image" />
+          {imageUrl && (
+            <img src={imageUrl} alt={task.title} className="task-image" />
           )}
 
           <span className="created">
@@ -81,6 +84,14 @@ Task.propTypes = {
     completed: PropTypes.bool.isRequired,
     createdAt: PropTypes.string.isRequired,
     imageUrl: PropTypes.string,
+    attachments: PropTypes.arrayOf(
+      PropTypes.shape({
+        filename: PropTypes.string.isRequired,
+        originalName: PropTypes.string,
+        mimetype: PropTypes.string,
+        size: PropTypes.number,
+      }),
+    ),
   }).isRequired,
 
   toggleStatus: PropTypes.func.isRequired,

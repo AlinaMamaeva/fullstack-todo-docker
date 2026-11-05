@@ -22,6 +22,30 @@ const todoSchema = new mongoose.Schema(
     dueDate: {
       type: Date,
     },
+    attachments: [
+      {
+        filename: {
+          type: String,
+          required: true,
+        },
+        originalName: {
+          type: String,
+          required: true,
+        },
+        mimetype: {
+          type: String,
+          required: true,
+        },
+        size: {
+          type: Number,
+          required: true,
+        },
+        uploadDate: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     imageUrl: {
       type: String,
       default: "",
@@ -44,12 +68,19 @@ const todoSchema = new mongoose.Schema(
 todoSchema.index({
   createdAt: -1,
 });
+
 todoSchema.index({
   completed: 1,
 });
+
+todoSchema.index({
+  priority: 1,
+});
+
 todoSchema.index({
   dueDate: -1,
 });
 
 const Todo = mongoose.model("Todo", todoSchema);
+
 export default Todo;
