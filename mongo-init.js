@@ -6,7 +6,7 @@ db.createCollection("todos");
 db.todos.createIndex({ createdAt: -1 });
 db.todos.createIndex({ completed: 1 });
 db.todos.createIndex({ priority: 1 });
-db.todos.createIndex({ dueDate: 1 });
+db.todos.createIndex({ dueDate: -1 });
 
 db.todos.insertMany([
   {

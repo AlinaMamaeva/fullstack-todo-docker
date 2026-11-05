@@ -127,7 +127,7 @@ export const getTodos = async (
       req.query.priority as string | undefined,
     );
 
-    // 3. Save result to Redis for 60 seconds
+    // 3. Save result to Redis for 5 minutes
     await redisClient.set(cacheKey, JSON.stringify(todos), {
       EX: 300,
     });

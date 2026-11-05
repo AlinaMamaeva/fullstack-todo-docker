@@ -1,4 +1,17 @@
 import mongoose from "mongoose";
+
+mongoose.connection.on("connected", () => {
+  console.log("MongoDB connected");
+});
+
+mongoose.connection.on("error", (error) => {
+  console.error("MongoDB connection error:", error);
+});
+
+mongoose.connection.on("disconnected", () => {
+  console.warn("MongoDB disconnected");
+});
+
 export default async function connectDB(): Promise<void> {
   let mongoURI = process.env.MONGODB_URI;
 
